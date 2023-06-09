@@ -87,7 +87,7 @@ class SlackLogHandler(Handler):
     def build_trace(self, record, fallback):
         trace = {
             "fallback": fallback,
-            "color": COLORS.get(record.levelno, INFO_COLOR),
+            "color": COLORS.get(record.levelno, NOTSET_COLOR),
         }
 
         if record.exc_info:
