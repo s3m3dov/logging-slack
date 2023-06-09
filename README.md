@@ -27,11 +27,11 @@ Generate a key at <https://api.slack.com/>
 
 ### channel (required)
 
-Set which channel id you want to post to, e.g. \"C0XXXXXXXXX\".
+Set which channel id you want to post to, e.g. `C0XXXXXXXXX` or `#random`.
 
 ### username
 
-The username that will post to Slack. Defaults to \"Python logger\".
+The username that will post to Slack. Defaults to `Logging Alerts`.
 
 ### icon_url
 
@@ -40,11 +40,11 @@ URL to an image to use as the icon for the logger user
 ### icon_emoji
 
 emoji to use as the icon. Overrides icon_url. If neither icon_url nor
-icon_emoji is set, :heavy_exclamation_mark: will be used.
+icon_emoji is set, ":heavy_exclamation_mark:" will be used.
 
 ### fail_silent
 
-Defaults to False. If your API key is invalid or for some other reason
+Defaults to `False`. If your API key is invalid or for some other reason
 the API call returns an error, this option will silently ignore the API
 error. If you enable this setting, **make sure you have another log
 handler** that will also handle the same log events, or they may be lost
@@ -95,8 +95,7 @@ if __name__ == "__main__":
 ## Slack message formatting
 
 This example use a subclass that will send a formatted message to a
-Slack channel. Reference:
-<https://api.slack.com/reference/surfaces/formatting>
+Slack channel. [Learn More](https://api.slack.com/reference/surfaces/formatting)
 
 ``` python
 class CustomLogHandler(SlackLogHandler):
