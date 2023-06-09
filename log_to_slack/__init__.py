@@ -81,10 +81,25 @@ class SlackLogHandler(Handler):
         self.icon_emoji = icon_emoji if (icon_emoji or icon_url) else DEFAULT_EMOJI
         self.channel = channel
 
-    def build_msg(self, record):
+    def build_msg(self, record: LogRecord) -> str:
+        """
+        Build the Slack message
+        Args:
+            record (LogRecord): The log record
+        Returns:
+            str: The Slack message text
+        """
         return six.text_type(self.format(record))
 
-    def build_trace(self, record, fallback):
+    def build_trace(self, record: LogRecord, fallback: str) -> dict:
+        """
+        Build the Slack attachment for the stacktrace
+        Args:
+            record (LogRecord): The log record
+            fallback (str): The fallback message to use if the stacktrace is not available
+        Returns:
+            dict: The Slack attachment
+        """
         trace = {
             "fallback": fallback,
             "color": COLORS.get(record.levelno, NOTSET_COLOR),
@@ -95,7 +110,16 @@ class SlackLogHandler(Handler):
             trace["text"] = f"```{text}```"
         return trace
 
-    def emit(self, record):
+    def emit(self, record: LogRecord) -> None:
+        """
+        Emit a record.
+        Args:
+            record (LogRecord): The log record
+        Returns:
+            None
+        Raises:
+            SlackApiError: If the Slack API returns an error and fail_silent is False
+        """
         message = self.build_msg(record)
         if self.stack_trace:
             trace = self.build_trace(record, fallback=message)
