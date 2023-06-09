@@ -31,7 +31,7 @@ Installation
 Options
 -------
 
-api_key (required)
+slack_token (required)
 ~~~~~~~~~~~~~~~~~~
 
 Generate a key at https://api.slack.com/
