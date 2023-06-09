@@ -1,6 +1,3 @@
-from slack_sdk import WebClient
-from slack_sdk.errors import SlackApiError
-
 import traceback
 from logging import (
     Handler,
@@ -12,22 +9,29 @@ from logging import (
     DEBUG,
     NOTSET,
     Formatter,
+    LogRecord,
 )
 
 import six
+from slack_sdk import WebClient
+from slack_sdk.errors import SlackApiError
 
+NOTSET_COLOR = "#808080"
+DEBUG_COLOR = "#00FFFF"
+INFO_COLOR = "#00C400"
+WARNING_COLOR = "#FFE240"
 ERROR_COLOR = "#FF0000"
-WARNING_COLOR = "#FFCC00"
-INFO_COLOR = "#439FE0"
+CRITICAL_COLOR = "#700000"
+FATAL_COLOR = CRITICAL_COLOR
 
 COLORS = {
-    CRITICAL: ERROR_COLOR,
-    FATAL: ERROR_COLOR,
-    ERROR: ERROR_COLOR,
-    WARNING: WARNING_COLOR,
+    NOTSET: NOTSET_COLOR,
+    DEBUG: DEBUG_COLOR,
     INFO: INFO_COLOR,
-    DEBUG: INFO_COLOR,
-    NOTSET: INFO_COLOR,
+    WARNING: WARNING_COLOR,
+    ERROR: ERROR_COLOR,
+    FATAL: FATAL_COLOR,
+    CRITICAL: CRITICAL_COLOR,
 }
 
 DEFAULT_EMOJI = ":heavy_exclamation_mark:"
@@ -35,7 +39,7 @@ DEFAULT_EMOJI = ":heavy_exclamation_mark:"
 
 class NoStacktraceFormatter(Formatter):
     """
-    By default the stacktrace will be formatted as part of the message.
+    By default, the stacktrace will be formatted as part of the message.
     Since we want the stacktrace to be in the attachment of the Slack message,
      we need a custom formatter to leave it out of the message
     """
@@ -43,7 +47,7 @@ class NoStacktraceFormatter(Formatter):
     def formatException(self, ei):
         return None
 
-    def format(self, record):
+    def format(self, record: LogRecord):
         # Work-around for https://bugs.python.org/issue29056
         saved_exc_text = record.exc_text
         record.exc_text = None
@@ -56,14 +60,14 @@ class NoStacktraceFormatter(Formatter):
 class SlackLogHandler(Handler):
     def __init__(
         self,
-        slack_token,
-        channel,
-        stack_trace=True,
-        username="Python logger",
-        icon_url=None,
-        icon_emoji=None,
-        fail_silent=False,
-    ):
+        slack_token: str,
+        channel: str,
+        stack_trace: bool = True,
+        username: str = "Logging Alerts",
+        icon_url: str = None,
+        icon_emoji: str = None,
+        fail_silent: bool = False,
+    ) -> None:
         Handler.__init__(self)
         self.formatter = NoStacktraceFormatter()
 

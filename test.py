@@ -12,8 +12,10 @@ slack_handler = SlackLogHandler(
     SLACK_CHANNEL,
     stack_trace=True,
 )
+slack_handler.setLevel(logging.WARNING)
 
 logger = logging.getLogger("debug_application")
+logger.addHandler(logging.StreamHandler())
 logger.addHandler(slack_handler)
 logger.setLevel(logging.DEBUG)
 
