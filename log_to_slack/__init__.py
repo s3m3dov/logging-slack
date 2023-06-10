@@ -36,6 +36,12 @@ COLORS = {
 
 DEFAULT_EMOJI = ":heavy_exclamation_mark:"
 
+__all__ = [
+    "SlackLogHandler",
+    "NoStacktraceFormatter",
+    "COLORS"
+]
+
 
 class NoStacktraceFormatter(Formatter):
     """
