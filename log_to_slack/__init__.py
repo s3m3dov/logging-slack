@@ -12,12 +12,12 @@ from logging import (
     Filter,
     LogRecord,
 )
-from logging.handlers import HTTPHandler
+from typing import Optional
 
 import six
-from urllib.parse import urlparse
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
+from slack_sdk.webhook import WebhookClient
 
 NOTSET_COLOR = "#808080"
 DEBUG_COLOR = "#00FFFF"
@@ -46,7 +46,7 @@ class NoStacktraceFormatter(Formatter):
     """
     By default, the stacktrace will be formatted as part of the message.
     Since we want the stacktrace to be in the attachment of the Slack message,
-     we need a custom formatter to leave it out of the message
+        we need a custom formatter to leave it out of the message
     """
 
     def formatException(self, ei):
@@ -84,6 +84,7 @@ class SlackLogHandler(Handler):
         icon_url: str = None,
         icon_emoji: str = None,
         fail_silent: bool = False,
+        webhook_url: Optional[str] = None,
     ) -> None:
         Handler.__init__(self)
         self.formatter = NoStacktraceFormatter()
@@ -91,13 +92,16 @@ class SlackLogHandler(Handler):
         self.stack_trace = stack_trace
         self.fail_silent = fail_silent
 
-        self.client = WebClient(token=slack_token)
+        if webhook_url:
+            self.client = WebhookClient(webhook_url)
+            self.is_webhook = True
+        else:
+            self.client = WebClient(token=slack_token)
+            self.is_webhook = False
 
         self.username = username
         self.icon_url = icon_url
-        self.icon_emoji = (
-            icon_emoji if (icon_emoji or icon_url) else DEFAULT_EMOJI
-        )
+        self.icon_emoji = icon_emoji if (icon_emoji or icon_url) else DEFAULT_EMOJI
         self.channel = channel
 
     def build_msg(self, record: LogRecord) -> str:
@@ -147,70 +151,19 @@ class SlackLogHandler(Handler):
             attachments = None
 
         try:
-            self.client.chat_postMessage(
-                text=message,
-                channel=self.channel,
-                username=self.username,
-                icon_url=self.icon_url,
-                icon_emoji=self.icon_emoji,
-                attachments=attachments,
-            )
+            if self.is_webhook:
+                self.client.send(text=message, attachments=attachments)
+            else:
+                self.client.chat_postMessage(
+                    text=message,
+                    channel=self.channel,
+                    username=self.username,
+                    icon_url=self.icon_url,
+                    icon_emoji=self.icon_emoji,
+                    attachments=attachments,
+                )
         except SlackApiError as e:
             if self.fail_silent:
                 pass
             else:
                 raise e
-
-
-class SlackLogHTTPHandler(HTTPHandler):
-    def __init__(
-        self,
-        url,
-        username=None,
-        icon_url=None,
-        icon_emoji=None,
-        channel=None,
-        mention=None,
-    ):
-        o = urlparse(url)
-        is_secure = o.scheme == "https"
-        HTTPHandler.__init__(
-            self, o.netloc, o.path, method="POST", secure=is_secure
-        )
-        self.username = username
-        self.icon_url = icon_url
-        self.icon_emoji = icon_emoji
-        self.channel = channel
-        self.mention = mention and mention.lstrip("@")
-
-    def mapLogRecord(self, record):
-        text = self.format(record)
-
-        if isinstance(self.formatter, SlackFormatter):
-            payload = {
-                "attachments": [
-                    text,
-                ],
-            }
-            if self.mention:
-                payload["text"] = "<@{0}>".format(self.mention)
-        else:
-            if self.mention:
-                text = "<@{0}> {1}".format(self.mention, text)
-            payload = {
-                "text": text,
-            }
-
-        if self.username:
-            payload["username"] = self.username
-        if self.icon_url:
-            payload["icon_url"] = self.icon_url
-        if self.icon_emoji:
-            payload["icon_emoji"] = self.icon_emoji
-        if self.channel:
-            payload["channel"] = self.channel
-
-        ret = {
-            "payload": json.dumps(payload),
-        }
-        return ret
