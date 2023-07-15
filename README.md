@@ -9,7 +9,7 @@
 Python log handler that posts to a Slack channel. Posts to the Slack API
 using [Python Slack SDK](https://github.com/slackapi/python-slack-sdk).
 
-Original work by  
+Original repos: 
   - Mathias Ose: [slacker_log_handler](https://github.com/mathiasose/slacker_log_handler)
   - [log-to-slack](https://github.com/pandianmn/log_to_slack)
   - [python-slack-logger](https://github.com/junhwi/python-slack-logger/)
