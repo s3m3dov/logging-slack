@@ -39,7 +39,12 @@ COLORS = {
 
 DEFAULT_EMOJI = ":heavy_exclamation_mark:"
 
-__all__ = ["SlackLogHandler", "SlackLogFilter", "NoStacktraceFormatter", "COLORS"]
+__all__ = [
+    "SlackLogHandler",
+    "SlackLogFilter",
+    "NoStacktraceFormatter",
+    "COLORS",
+]
 
 
 class NoStacktraceFormatter(Formatter):
@@ -77,8 +82,8 @@ class SlackLogFilter(Filter):
 class SlackLogHandler(Handler):
     def __init__(
         self,
-        slack_token: str,
-        channel: str,
+        slack_token: str = None,
+        channel: str = None,
         stack_trace: bool = True,
         username: str = "Logging Alerts",
         icon_url: str = None,
@@ -96,12 +101,22 @@ class SlackLogHandler(Handler):
             self.client = WebhookClient(webhook_url)
             self.is_webhook = True
         else:
+            if not slack_token:
+                raise ValueError(
+                    "slack_token is required when not using webhook_url"
+                )
+            if not channel:
+                raise ValueError(
+                    "channel is required when not using webhook_url"
+                )
             self.client = WebClient(token=slack_token)
             self.is_webhook = False
 
         self.username = username
         self.icon_url = icon_url
-        self.icon_emoji = icon_emoji if (icon_emoji or icon_url) else DEFAULT_EMOJI
+        self.icon_emoji = (
+            icon_emoji if (icon_emoji or icon_url) else DEFAULT_EMOJI
+        )
         self.channel = channel
 
     def build_msg(self, record: LogRecord) -> str:
