@@ -1,7 +1,6 @@
 import traceback
 from logging import (
     Handler,
-    HTTPHandler,
     CRITICAL,
     ERROR,
     WARNING,
@@ -13,6 +12,7 @@ from logging import (
     Filter,
     LogRecord,
 )
+from logging.handlers import HTTPHandler
 
 import six
 from urllib.parse import urlparse
@@ -39,7 +39,7 @@ COLORS = {
 
 DEFAULT_EMOJI = ":heavy_exclamation_mark:"
 
-__all__ = ["SlackLogHandler", "SlackLogHTTPHandler", "SlackLogFilter", "NoStacktraceFormatter", "COLORS"]
+__all__ = ["SlackLogHandler", "NoStacktraceFormatter", "COLORS"]
 
 
 class NoStacktraceFormatter(Formatter):
