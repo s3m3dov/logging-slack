@@ -39,11 +39,7 @@ COLORS = {
 
 DEFAULT_EMOJI = ":heavy_exclamation_mark:"
 
-__all__ = [
-    "SlackLogHandler",
-    "NoStacktraceFormatter",
-    "COLORS"
-]
+__all__ = ["SlackLogHandler", "NoStacktraceFormatter", "COLORS"]
 
 
 class NoStacktraceFormatter(Formatter):
@@ -75,7 +71,7 @@ class SlackLogFilter(Filter):
     """
 
     def filter(self, record):
-        return getattr(record, 'notify_slack', False)
+        return getattr(record, "notify_slack", False)
 
 
 class SlackLogHandler(Handler):
@@ -99,7 +95,9 @@ class SlackLogHandler(Handler):
 
         self.username = username
         self.icon_url = icon_url
-        self.icon_emoji = icon_emoji if (icon_emoji or icon_url) else DEFAULT_EMOJI
+        self.icon_emoji = (
+            icon_emoji if (icon_emoji or icon_url) else DEFAULT_EMOJI
+        )
         self.channel = channel
 
     def build_msg(self, record: LogRecord) -> str:
@@ -165,44 +163,54 @@ class SlackLogHandler(Handler):
 
 
 class SlackLogHTTPHandler(HTTPHandler):
-    def __init__(self, url, username=None, icon_url=None, icon_emoji=None, channel=None, mention=None):
+    def __init__(
+        self,
+        url,
+        username=None,
+        icon_url=None,
+        icon_emoji=None,
+        channel=None,
+        mention=None,
+    ):
         o = urlparse(url)
-        is_secure = o.scheme == 'https'
-        HTTPHandler.__init__(self, o.netloc, o.path, method="POST", secure=is_secure)
+        is_secure = o.scheme == "https"
+        HTTPHandler.__init__(
+            self, o.netloc, o.path, method="POST", secure=is_secure
+        )
         self.username = username
         self.icon_url = icon_url
         self.icon_emoji = icon_emoji
         self.channel = channel
-        self.mention = mention and mention.lstrip('@')
+        self.mention = mention and mention.lstrip("@")
 
     def mapLogRecord(self, record):
         text = self.format(record)
 
         if isinstance(self.formatter, SlackFormatter):
             payload = {
-                'attachments': [
+                "attachments": [
                     text,
                 ],
             }
             if self.mention:
-                payload['text'] = '<@{0}>'.format(self.mention)
+                payload["text"] = "<@{0}>".format(self.mention)
         else:
             if self.mention:
-                text = '<@{0}> {1}'.format(self.mention, text)
+                text = "<@{0}> {1}".format(self.mention, text)
             payload = {
-                'text': text,
+                "text": text,
             }
 
         if self.username:
-            payload['username'] = self.username
+            payload["username"] = self.username
         if self.icon_url:
-            payload['icon_url'] = self.icon_url
+            payload["icon_url"] = self.icon_url
         if self.icon_emoji:
-            payload['icon_emoji'] = self.icon_emoji
+            payload["icon_emoji"] = self.icon_emoji
         if self.channel:
-            payload['channel'] = self.channel
+            payload["channel"] = self.channel
 
         ret = {
-            'payload': json.dumps(payload),
+            "payload": json.dumps(payload),
         }
         return ret
