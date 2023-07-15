@@ -1,6 +1,7 @@
 import traceback
 from logging import (
     Handler,
+    HTTPHandler,
     CRITICAL,
     ERROR,
     WARNING,
@@ -9,10 +10,12 @@ from logging import (
     DEBUG,
     NOTSET,
     Formatter,
+    Filter,
     LogRecord,
 )
 
 import six
+from urllib.parse import urlparse
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
@@ -61,6 +64,18 @@ class NoStacktraceFormatter(Formatter):
             return super(NoStacktraceFormatter, self).format(record)
         finally:
             record.exc_text = saved_exc_text
+
+
+class SlackLogFilter(Filter):
+    """
+    Logging filter to decide when logging to Slack is requested, using
+    the `extra` kwargs:
+
+        `logger.info("...", extra={'notify_slack': True})`
+    """
+
+    def filter(self, record):
+        return getattr(record, 'notify_slack', False)
 
 
 class SlackLogHandler(Handler):
@@ -147,3 +162,47 @@ class SlackLogHandler(Handler):
                 pass
             else:
                 raise e
+
+
+class SlackLogHTTPHandler(HTTPHandler):
+    def __init__(self, url, username=None, icon_url=None, icon_emoji=None, channel=None, mention=None):
+        o = urlparse(url)
+        is_secure = o.scheme == 'https'
+        HTTPHandler.__init__(self, o.netloc, o.path, method="POST", secure=is_secure)
+        self.username = username
+        self.icon_url = icon_url
+        self.icon_emoji = icon_emoji
+        self.channel = channel
+        self.mention = mention and mention.lstrip('@')
+
+    def mapLogRecord(self, record):
+        text = self.format(record)
+
+        if isinstance(self.formatter, SlackFormatter):
+            payload = {
+                'attachments': [
+                    text,
+                ],
+            }
+            if self.mention:
+                payload['text'] = '<@{0}>'.format(self.mention)
+        else:
+            if self.mention:
+                text = '<@{0}> {1}'.format(self.mention, text)
+            payload = {
+                'text': text,
+            }
+
+        if self.username:
+            payload['username'] = self.username
+        if self.icon_url:
+            payload['icon_url'] = self.icon_url
+        if self.icon_emoji:
+            payload['icon_emoji'] = self.icon_emoji
+        if self.channel:
+            payload['channel'] = self.channel
+
+        ret = {
+            'payload': json.dumps(payload),
+        }
+        return ret
