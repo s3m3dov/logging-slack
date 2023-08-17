@@ -4,12 +4,10 @@ from platform import python_version
 
 from log_to_slack import SlackLogHandler, NoStacktraceFormatter
 
-SLACK_API_TOKEN = os.getenv("SLACK_API_TOKEN")
-SLACK_CHANNEL = os.getenv("SLACK_CHANNEL")
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 
 slack_handler = SlackLogHandler(
-    SLACK_API_TOKEN,
-    SLACK_CHANNEL,
+    webhook_url=WEBHOOK_URL,
     stack_trace=True,
 )
 slack_handler.setLevel(logging.WARNING)

@@ -82,42 +82,54 @@ class SlackLogFilter(Filter):
 class SlackLogHandler(Handler):
     def __init__(
         self,
-        slack_token: str = None,
-        channel: str = None,
+        slack_token: Optional[str] = None,
+        channel: Optional[str] = None,
+        webhook_url: Optional[str] = None,
+        is_webhook: bool = True,
+        is_debug: bool = False,
         stack_trace: bool = True,
         username: str = "Logging Alerts",
         icon_url: str = None,
         icon_emoji: str = None,
         fail_silent: bool = False,
-        webhook_url: Optional[str] = None,
     ) -> None:
+        """
+        Initialize the Slack handler
+        Args:
+            slack_token (str): The Slack API token if not using webhook_url
+            channel (str): The Slack channel to post to if not using webhook_url
+            webhook_url (str): The Slack webhook URL if using webhook_url
+            is_webhook (bool): Whether to use webhook_url or not
+            is_debug (bool): Doesn't send Slack messages if True
+            stack_trace (bool): Whether to include the stacktrace in the Slack message
+            username (str): The username to use for the Slack message
+            icon_url (str): The icon URL to use for the Slack message
+            icon_emoji (str): The icon emoji to use for the Slack message
+            fail_silent (bool): Whether to fail silently if the Slack API returns an error
+        Returns:
+            None
+        """
         Handler.__init__(self)
         self.formatter = NoStacktraceFormatter()
-
         self.stack_trace = stack_trace
         self.fail_silent = fail_silent
-
-        if webhook_url:
-            self.client = WebhookClient(webhook_url)
-            self.is_webhook = True
-        else:
-            if not slack_token:
-                raise ValueError(
-                    "slack_token is required when not using webhook_url"
-                )
-            if not channel:
-                raise ValueError(
-                    "channel is required when not using webhook_url"
-                )
-            self.client = WebClient(token=slack_token)
-            self.is_webhook = False
-
         self.username = username
         self.icon_url = icon_url
-        self.icon_emoji = (
-            icon_emoji if (icon_emoji or icon_url) else DEFAULT_EMOJI
-        )
-        self.channel = channel
+        self.icon_emoji = icon_emoji if (icon_emoji or icon_url) else DEFAULT_EMOJI
+        self.is_debug = is_debug
+        self.is_webhook = is_webhook
+
+        if is_webhook:
+            if not webhook_url:
+                raise ValueError("webhook_url is required when webhook delivery is enabled")
+            self.client = WebhookClient(webhook_url)
+        else:
+            if not slack_token:
+                raise ValueError("slack_token is required when not using webhook_url")
+            if not channel:
+                raise ValueError("channel is required when not using webhook_url")
+            self.client = WebClient(token=slack_token)
+            self.channel = channel
 
     def build_msg(self, record: LogRecord) -> str:
         """
@@ -166,6 +178,9 @@ class SlackLogHandler(Handler):
             attachments = None
 
         try:
+            if self.is_debug:
+                return
+
             if self.is_webhook:
                 self.client.send(text=message, attachments=attachments)
             else:
