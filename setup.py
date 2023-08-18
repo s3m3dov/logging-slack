@@ -3,7 +3,7 @@ import os
 
 from setuptools import setup
 
-VERSION = "1.8.1"
+VERSION = "0.1.0"
 
 
 def readme(*paths):
@@ -17,8 +17,8 @@ def requirements(*paths):
 
 
 setup(
-    name="log_to_slack",
-    packages=["log_to_slack"],
+    name="logging_slack",
+    packages=["logging_slack"],
     version=VERSION,
     description="Posts log events to Slack via API",
     long_description=readme("README.rst"),
@@ -41,8 +41,8 @@ setup(
     download_url="https://github.com/pandianmn/log_to_slack/archive/{v}.tar.gz".format(
         v=VERSION
     ),
-    author="Pandian Muninathan",
-    author_email="pandian.m@hotmail.com",
+    author="Hikmat Samadov",
+    author_email="hikmat@cublya.com",
     keywords=["slack", "logging"],
     install_requires=requirements("requirements.txt"),
     include_package_data=True,
