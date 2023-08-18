@@ -1,70 +1,28 @@
 import traceback
 from logging import (
     Handler,
-    CRITICAL,
-    ERROR,
-    WARNING,
-    INFO,
-    FATAL,
-    DEBUG,
-    NOTSET,
-    Formatter,
     Filter,
     LogRecord,
 )
-from typing import Optional
+from typing import Optional, Dict, Any, Tuple
+from warnings import warn
 
 import six
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 from slack_sdk.webhook import WebhookClient
 
-NOTSET_COLOR = "#808080"
-DEBUG_COLOR = "#00FFFF"
-INFO_COLOR = "#00C400"
-WARNING_COLOR = "#FFE240"
-ERROR_COLOR = "#FF0000"
-CRITICAL_COLOR = "#700000"
-FATAL_COLOR = CRITICAL_COLOR
-
-COLORS = {
-    NOTSET: NOTSET_COLOR,
-    DEBUG: DEBUG_COLOR,
-    INFO: INFO_COLOR,
-    WARNING: WARNING_COLOR,
-    ERROR: ERROR_COLOR,
-    FATAL: FATAL_COLOR,
-    CRITICAL: CRITICAL_COLOR,
-}
+from .colors import COLORS, NOTSET_COLOR
+from .formatters import NoStacktraceFormatter
 
 DEFAULT_EMOJI = ":heavy_exclamation_mark:"
+DEFAULT_MSG_LEN = 1300
+DEFAULT_TRACEBACK_LEN = 700
 
 __all__ = [
     "SlackLogHandler",
     "SlackLogFilter",
-    "NoStacktraceFormatter",
-    "COLORS",
 ]
-
-
-class NoStacktraceFormatter(Formatter):
-    """
-    By default, the stacktrace will be formatted as part of the message.
-    Since we want the stacktrace to be in the attachment of the Slack message,
-        we need a custom formatter to leave it out of the message
-    """
-
-    def formatException(self, ei):
-        return None
-
-    def format(self, record: LogRecord):
-        # Work-around for https://bugs.python.org/issue29056
-        saved_exc_text = record.exc_text
-        record.exc_text = None
-        try:
-            return super(NoStacktraceFormatter, self).format(record)
-        finally:
-            record.exc_text = saved_exc_text
 
 
 class SlackLogFilter(Filter):
@@ -92,6 +50,8 @@ class SlackLogHandler(Handler):
         icon_url: str = None,
         icon_emoji: str = None,
         fail_silent: bool = False,
+        msg_len: int = DEFAULT_MSG_LEN,
+        traceback_len: int = DEFAULT_TRACEBACK_LEN,
     ) -> None:
         """
         Initialize the Slack handler
@@ -106,6 +66,8 @@ class SlackLogHandler(Handler):
             icon_url (str): The icon URL to use for the Slack message
             icon_emoji (str): The icon emoji to use for the Slack message
             fail_silent (bool): Whether to fail silently if the Slack API returns an error
+            msg_len (int): The maximum length of the Slack message
+            traceback_len (int): The maximum length of the stacktrace
         Returns:
             None
         """
@@ -121,7 +83,9 @@ class SlackLogHandler(Handler):
 
         if is_webhook:
             if not webhook_url:
-                raise ValueError("webhook_url is required when webhook delivery is enabled")
+                raise ValueError(
+                    "webhook_url is required when webhook delivery is enabled"
+                )
             self.client = WebhookClient(webhook_url)
         else:
             if not slack_token:
@@ -131,17 +95,37 @@ class SlackLogHandler(Handler):
             self.client = WebClient(token=slack_token)
             self.channel = channel
 
-    def build_msg(self, record: LogRecord) -> str:
-        """
-        Build the Slack message
-        Args:
-            record (LogRecord): The log record
-        Returns:
-            str: The Slack message text
-        """
-        return six.text_type(self.format(record))
+        self.msg_len, self.trace_len = self._verify_character_length(
+            msg_len, traceback_len
+        )
 
-    def build_trace(self, record: LogRecord, fallback: str) -> dict:
+    @staticmethod
+    def _verify_character_length(msg_len: int, trace_len: int) -> Tuple[int, int]:
+        if msg_len < 1:
+            msg_len = DEFAULT_MSG_LEN
+            warn(
+                "msg_len must be greater than 0, using default value: %d"
+                % DEFAULT_MSG_LEN
+            )
+        if trace_len < 1:
+            trace_len = DEFAULT_TRACEBACK_LEN
+            warn(
+                "trace_len must be greater than 0, using default value: %d"
+                % DEFAULT_TRACEBACK_LEN
+            )
+
+        if trace_len + msg_len > 4000:
+            warn(
+                f"msg_len + trace_len must be less than 4000, using default values: %d, %d"
+                % (DEFAULT_MSG_LEN, DEFAULT_TRACEBACK_LEN)
+            )
+            msg_len = DEFAULT_MSG_LEN
+            trace_len = DEFAULT_TRACEBACK_LEN
+
+        return msg_len, trace_len
+
+    @staticmethod
+    def build_trace(record: LogRecord, fallback: str) -> Dict[str, Any]:
         """
         Build the Slack attachment for the stacktrace
         Args:
@@ -157,8 +141,43 @@ class SlackLogHandler(Handler):
 
         if record.exc_info:
             text = "\n".join(traceback.format_exception(*record.exc_info))
+            text = text[:DEFAULT_TRACEBACK_LEN]
             trace["text"] = f"```{text}```"
         return trace
+
+    def _build_msg(self, record: LogRecord) -> str:
+        """
+        Build the Slack message
+        Args:
+            record (LogRecord): The log record
+        Returns:
+            str: The Slack message text
+        """
+        msg = six.text_type(self.format(record))
+        msg = msg[:DEFAULT_MSG_LEN]
+        return msg
+
+    def build_msg(self, record: LogRecord) -> Dict[str, Any]:
+        msg = self._build_msg(record)
+        payload = {
+            "color": COLORS.get(record.levelno, NOTSET_COLOR),
+            "fallback": msg,
+            "blocks": [
+                {
+                    "type": "header",
+                    "text": {
+                        "type": "plain_text",
+                        "text": self.username,
+                        "emoji": True,
+                    },
+                },
+                {
+                    "type": "section",
+                    "text": {"type": "mrkdwn", "text": f"{msg}"},
+                },
+            ],
+        }
+        return payload
 
     def emit(self, record: LogRecord) -> None:
         """
@@ -171,21 +190,21 @@ class SlackLogHandler(Handler):
             SlackApiError: If the Slack API returns an error and fail_silent is False
         """
         message = self.build_msg(record)
+        attachments = [message]
         if self.stack_trace:
-            trace = self.build_trace(record, fallback=message)
-            attachments = [trace]
-        else:
-            attachments = None
+            trace = self.build_trace(record, fallback=record.message)
+            attachments.append(trace)
 
         try:
             if self.is_debug:
                 return
 
             if self.is_webhook:
-                self.client.send(text=message, attachments=attachments)
+                self.client: WebhookClient
+                self.client.send(attachments=attachments)
             else:
+                self.client: WebClient
                 self.client.chat_postMessage(
-                    text=message,
                     channel=self.channel,
                     username=self.username,
                     icon_url=self.icon_url,
