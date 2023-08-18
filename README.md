@@ -9,7 +9,7 @@
 Python log handler that posts to a Slack channel. Posts to the Slack API
 using [Python Slack SDK](https://github.com/slackapi/python-slack-sdk).
 
-Original repos: 
+Related Repos: 
   - Mathias Ose: [slacker_log_handler](https://github.com/mathiasose/slacker_log_handler)
   - [log-to-slack](https://github.com/pandianmn/log_to_slack)
   - [python-slack-logger](https://github.com/junhwi/python-slack-logger/)
@@ -59,38 +59,43 @@ channel.
 
 ``` python
 import logging
-import sys
-from datetime import datetime
-from log_to_slack import SlackLogHandler, NoStacktraceFormatter
+import os
 
-logger = logging.getLogger("Daily Report")
+from log_to_slack import SlackLogHandler
+from log_to_slack.formatters import NoStacktraceFormatter, DefaultFormatter
+
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")
+
+logger = logging.getLogger("debug_application")
 logger.setLevel(logging.DEBUG)
 
-""" Adding slack handler """
-slack_handler = SlackerLogHandler(
-    "xoxb-XXXXX-XXX",  # slack api token
-    "C0XXXXXXXXX", # channel id not channel name
-    stack_trace=True,
-    fail_silent=True,
-)
-formatter = NoStacktraceFormatter(
-    "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-slack_handler.setFormatter(formatter)
+default_formatter = DefaultFormatter("%(levelprefix)s %(asctime)s (%(name)s) %(message)s")
+no_stacktrace_formatter = NoStacktraceFormatter("%(levelprefix)s %(asctime)s (%(name)s) %(message)s")
+
+default_handler = logging.StreamHandler()
+default_handler.setFormatter(default_formatter)
+logger.addHandler(default_handler)
+
+slack_handler = SlackLogHandler(webhook_url=WEBHOOK_URL, stack_trace=True)
+slack_handler.setFormatter(no_stacktrace_formatter)
 slack_handler.setLevel(logging.ERROR)
 logger.addHandler(slack_handler)
 
-if __name__ == "__main__":
-    logger.debug("Debug message to slack!")
-    logger.info("Info message to slack!")
-    logger.warning("Warning message to slack!")
+slack_handler_2 = SlackLogHandler(webhook_url=WEBHOOK_URL, stack_trace=True, traceback_len=8000, msg_len=-1)
 
-    try:
-        x = 5 / 0
-    except:
-        logger.exception("Exception message to slack!")
-        # # you can also use the below statement to log error with trace info
-        # logger.error("Error message to slack!", exc_info=True)
+# Main code
+logger.debug("Test DEBUG")
+logger.info("Test INFO")
+logger.warning("Test WARNING")
+logger.error("Test ERROR")
+logger.fatal("Test FATAL")
+logger.critical("Test CRITICAL")
+
+try:
+    raise Exception("Test exception")
+except Exception as e:
+    logger.exception(e)
+
 ```
 
 ## Slack message formatting
