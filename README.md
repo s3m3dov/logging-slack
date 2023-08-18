@@ -81,8 +81,6 @@ slack_handler.setFormatter(no_stacktrace_formatter)
 slack_handler.setLevel(logging.ERROR)
 logger.addHandler(slack_handler)
 
-slack_handler_2 = SlackLogHandler(webhook_url=WEBHOOK_URL, stack_trace=True, traceback_len=8000, msg_len=-1)
-
 # Main code
 logger.debug("Test DEBUG")
 logger.info("Test INFO")
