@@ -17,8 +17,8 @@ def requirements(*paths):
 
 
 setup(
-    name="logging_slack",
-    packages=["logging_slack"],
+    name="logging-slack",
+    packages=["logging-slack"],
     version=VERSION,
     description="Posts log events to Slack via API",
     long_description=readme("README.rst"),
