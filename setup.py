@@ -4,6 +4,7 @@ import os
 from setuptools import setup
 
 VERSION = "0.1.0"
+PACKAGE_NAME = "logging_slacker"
 
 
 def readme(*paths):
@@ -13,15 +14,18 @@ def readme(*paths):
 
 def requirements(*paths):
     with open(os.path.join(*paths), "r") as f:
-        return list(line.strip() for line in f.readlines() if line.strip() != "")
+        return list(
+            line.strip() for line in f.readlines() if line.strip() != ""
+        )
 
 
 setup(
-    name="logging-slack",
-    packages=["logging-slack"],
+    name=PACKAGE_NAME,
+    packages=[PACKAGE_NAME],
     version=VERSION,
     description="Posts log events to Slack via API",
-    long_description=readme("README.rst"),
+    long_description=readme("README.md"),
+    long_description_content_type="text/markdown",
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Environment :: Web Environment",
@@ -37,10 +41,8 @@ setup(
         "Topic :: Communications :: Chat",
         "Topic :: Office/Business :: Groupware",
     ],
-    url="https://github.com/pandianmn/log_to_slack",
-    download_url="https://github.com/pandianmn/log_to_slack/archive/{v}.tar.gz".format(
-        v=VERSION
-    ),
+    url=f"https://github.com/s3m3dov/{PACKAGE_NAME}",
+    download_url=f"https://github.com/s3m3dov/{PACKAGE_NAME}/archive/{VERSION}.tar.gz",
     author="Hikmat Samadov",
     author_email="hikmat@cublya.com",
     keywords=["slack", "logging"],

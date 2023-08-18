@@ -1,4 +1,4 @@
-# logging-slack
+# logging_slacker
 
 [![image](https://img.shields.io/pypi/v/log-to-slack.svg?style=flat-square)](https://pypi.python.org/pypi/log-to-slack)
 [![image](https://img.shields.io/pypi/wheel/log-to-slack.svg?style=flat-square)](https://pypi.python.org/pypi/log-to-slack)
@@ -17,7 +17,7 @@ Related Repos:
 ## Installation
 
 ``` bash
-poetry add git+https://github.com/s3m3dov/logging-slack.git
+pip install logging_slacker
 ```
 
 ## Arguments
