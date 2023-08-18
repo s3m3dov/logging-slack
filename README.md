@@ -21,39 +21,28 @@ poetry add git+https://github.com/s3m3dov/logging-slack.git
 ```
 
 ## Arguments
-
-### slack_token (required)
-
-Generate a key at <https://api.slack.com/>
-
-### channel (required)
-
-Set which channel id you want to post to, e.g. `C0XXXXXXXXX` or `#random`.
-
-### username
-
-The username that will post to Slack. Defaults to `Logging Alerts`.
-
-### icon_url
-
-URL to an image to use as the icon for the logger user
-
-### icon_emoji
-
-emoji to use as the icon. Overrides icon_url. If neither icon_url nor
-icon_emoji is set, ":heavy_exclamation_mark:" will be used.
-
-### fail_silent
-
-Defaults to `False`. If your API key is invalid or for some other reason
-the API call returns an error, this option will silently ignore the API
-error. If you enable this setting, **make sure you have another log
-handler** that will also handle the same log events, or they may be lost
-entirely.
+- slack_token (str): The Slack API token if not using `webhook_url`
+  Generate a key at <https://api.slack.com/>
+- channel (str): The Slack channel to post to if not using `webhook_url`
+- webhook_url (str): The Slack webhook URL if using `webhook_url`
+- is_webhook (bool): Whether to use webhook_url or not (Defaults to `True`)
+- is_debug (bool): Doesn't send Slack messages if True (Defaults to `False`)
+- stack_trace (bool): Whether to include the stacktrace in the Slack message (Defaults to `True`)
+- username (str): The username to use for the Slack message (Not usable if using `webhook_url`)
+- icon_url (str): The icon URL to use for the Slack message (Not usable if using `webhook_url`)
+- icon_emoji (str): The icon emoji to use for the Slack message (Not usable if using `webhook_url`)
+- msg_len (int): The maximum length of the Slack message (Defaults to `1300`)
+- traceback_len (int): The maximum length of the stack_trace (Defaults to `700`)
+- fail_silent (bool): Whether to fail silently if the Slack API returns an error (Defaults to `False`)
+  Defaults to `False`. If your API key is invalid or for some other reason
+  the API call returns an error, this option will silently ignore the API
+  error. If you enable this setting, **make sure you have another log
+  handler** that will also handle the same log events, or they may be lost
+  entirely.
 
 ## Example Python logging handler
 
-This is how you use log-to-slack as a regular Python
+This is how you use log_to_slack as a regular Python
 logging handler. This example will send a error message to a slack
 channel.
 
