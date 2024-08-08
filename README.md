@@ -50,8 +50,8 @@ channel.
 import logging
 import os
 
-from log_to_slack import SlackLogHandler
-from log_to_slack.formatters import NoStacktraceFormatter, DefaultFormatter
+from logging_slacker import SlackLogHandler
+from logging_slacker.formatters import NoStacktraceFormatter, DefaultFormatter
 
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 
